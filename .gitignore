@@ -21,3 +21,7 @@ typechain-types
 cache
 artifacts
 
+hardhat.config.js
+*.js
+*.js
+hardhat.config.js
