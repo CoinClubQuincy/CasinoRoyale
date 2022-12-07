@@ -2,14 +2,14 @@ pragma solidity ^0.8.10;
 // SPDX-License-Identifier: MIT 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "./SHARE.sol";
+import "./BlackJack.sol";
 import "hardhat/console.sol";
 // 1M EXECUTIONS @0.25each = min 1,000 | max $250,000
 //Jackpot - 95% .        1/1M    min win: $1000      | max win: $250,000 1x
 //4/5     - 5%           1/100k  min win: $50        | max win: $25,000 10x
 //3/5     - 0.5%         1/10k   min win: $5         | max win: $1250 100x
 
-contract PandorasBox is XRCSHARE{
-    uint public baseFee;
+contract PandorasBox is Blackjack,XRCSHARE{
     uint public dificulty=10;
     uint public entrapy;
     uint public Spins=0;
@@ -46,7 +46,7 @@ contract PandorasBox is XRCSHARE{
         //console.log(entrapy1,entrapy2,entrapy3,entrapy4,entrapy5,win);
         return (entrapy1,entrapy2,entrapy3,entrapy4,entrapy5,win);
     }
-    
+
     function winConditions(uint _entrapy1,uint _entrapy2, uint _entrapy3, uint _entrapy4, uint _entrapy5,address payable _user)internal returns(bool){
         uint _entrapy = random(uint256(keccak256(abi.encodePacked(entrapy))),dificulty);
         if(_entrapy1 == _entrapy && _entrapy2 == _entrapy && _entrapy3 == _entrapy && _entrapy4 == _entrapy && _entrapy5 == _entrapy){
@@ -57,16 +57,6 @@ contract PandorasBox is XRCSHARE{
         }
         Spins++;
         return false;
-    }
-
-    function random(uint _entrapy, uint _multiplier) internal view returns(uint){ 
-        uint256 seed = uint256(keccak256(abi.encodePacked( block.timestamp + block.difficulty +
-        ((uint256(keccak256(abi.encodePacked(block.coinbase)))) / (block.timestamp)) +
-        block.gaslimit + 
-        ((uint256(keccak256(abi.encodePacked(msg.sender)))) / (block.timestamp)) +
-        block.number + _entrapy)));
-        
-        return (seed - ((seed / _multiplier) * _multiplier));
     }
     
     function refund(address payable _buyer, uint _total,uint _amount)internal returns(uint) {
