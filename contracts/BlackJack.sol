@@ -5,7 +5,7 @@ contract Blackjack {
     uint public baseFee;
     uint private difficulty = 10;
     
-    event GameStatus(address _player,string _winStatus,bool __winStatusBool,uint _total);
+    event GameStatus(address _player,string _winStatus,bool __winStatusBool,uint _yourTotal,uint[] _yourCards,uint _houseTotal,uint[] _houseCards);
     
     mapping(address => Gamer) public game;
     struct Gamer  {
@@ -42,21 +42,20 @@ contract Blackjack {
     }
 
     // Function to stand (end the player's turn)
-    function stand() public {
+    function stand() public returns(bool){
       // Check if it is the player's turn and the game is not over
-      if (game[msg.sender].gameState == 1 && !isGameOver()) {
+      if (game[msg.sender].gameState == 1) {
         // Set the game state to the house's turn
         game[msg.sender].gameState = 2;
 
         // Keep hitting until the house has at least 17
-        while (getHandValue(game[msg.sender].houseHand) <= 17) {
-          game[msg.sender].houseHand.push(dealCard(block.timestamp));
-        }
-
-        // If the house has bust, end the game
-        if (getHandValue(game[msg.sender].houseHand) > 21) {
-          game[msg.sender].gameState = 3;
-          isGameOver();
+        for(uint i=0;i<=3;i++) {
+          if(getHandValue(game[msg.sender].houseHand) >= 17){
+            game[msg.sender].gameState = 3;
+            return isGameOver();
+          } else {
+            game[msg.sender].houseHand.push(dealCard(block.timestamp+i));
+          }
         }
       }
     }
@@ -69,10 +68,6 @@ contract Blackjack {
         block.number + _entropy)));
         
         return (seed - ((seed / _multiplier) * _multiplier));
-    }
-
-    function dealCard(uint _entropy) internal view returns(uint){  
-        return(random(_entropy, difficulty) + 3);
     }
 
     function getHandValue(uint[] memory _playerHand) internal view returns(uint) {
@@ -89,6 +84,20 @@ contract Blackjack {
       }
       return number;
     }
+
+    function showHands(address _user)public view returns(uint[] memory ,uint[] memory){
+      return (game[msg.sender].playerHand,game[msg.sender].houseHand);
+    }
+
+    function dealCard(uint _entropy) internal view returns(uint){  
+      uint KQJ = random(_entropy, 10);
+      for(uint i=4;i<=10;i++){
+        if (KQJ == i){
+          KQJ = 0;
+          }
+        }
+      return(random(_entropy, difficulty) + 3);
+    }
     function reset()internal {
         game[msg.sender].playerHand = [0,0];
         game[msg.sender].houseHand = [0,0];
@@ -96,16 +105,12 @@ contract Blackjack {
     }
     
     function isGameOver() internal returns(bool){
-      if (game[msg.sender].gameState == 3 &&  getHandValue(game[msg.sender].playerHand) == 21) {
-        emit GameStatus(msg.sender,"You Win",true,getHandValue(game[msg.sender].playerHand));
-        reset();
-        return true;
-      } else if (game[msg.sender].gameState == 3 && getHandValue(game[msg.sender].playerHand) > getHandValue(game[msg.sender].houseHand) &&  getHandValue(game[msg.sender].playerHand) <= 21) {
-        emit GameStatus(msg.sender,"You Win",true,getHandValue(game[msg.sender].playerHand));
+      if (getHandValue(game[msg.sender].playerHand) > getHandValue(game[msg.sender].houseHand) ||  getHandValue(game[msg.sender].playerHand) == 21) {
+        emit GameStatus(msg.sender,"You Win",true,getHandValue(game[msg.sender].playerHand),game[msg.sender].playerHand,getHandValue(game[msg.sender].houseHand),game[msg.sender].houseHand);
         reset();
         return true;
       } else {
-        emit GameStatus(msg.sender,"You Loose",false,getHandValue(game[msg.sender].playerHand));
+        emit GameStatus(msg.sender,"You Loose",false,getHandValue(game[msg.sender].playerHand),game[msg.sender].playerHand,getHandValue(game[msg.sender].houseHand),game[msg.sender].houseHand);
         reset();
         return false;
     }
